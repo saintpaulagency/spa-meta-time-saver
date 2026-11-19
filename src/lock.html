@@ -57,7 +57,7 @@ button:disabled{opacity:.6;cursor:wait}
     var html=new TextDecoder().decode(pt);
     document.open();document.write(html);document.close();
     // Time Saved tracker retired (Nov 19 2026): its count lived in each browser and reset whenever keys were re-entered
-    var hideSaved=document.createElement('style');hideSaved.textContent='#saved{display:none!important}';(document.head||document.documentElement).appendChild(hideSaved);
+    var hideSaved=document.createElement('style');hideSaved.textContent='#saved,#chip-saved{display:none!important}';(document.head||document.documentElement).appendChild(hideSaved);
   }
   async function tryRemembered(){
     try{
