@@ -118,6 +118,33 @@ button:disabled{opacity:.6;cursor:wait}
       while((n=w.nextNode())){var v=swapStr(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}
     }
     // Meta sometimes refuses a big read ("Please reduce the amount of data you're asking for"); retry it in smaller pages
+    // Retry any Meta Graph read that fails with "reduce the amount of data", with a smaller page (covers reads that start before Meta.all is wrapped)
+    function fixFetch(){
+      try{
+        if(window.__spaFetchRetry||typeof window.fetch!=='function')return;
+        var of=window.fetch;
+        window.fetch=async function(input,init){
+          var res=await of.apply(window,arguments);
+          try{
+            var u=String(input&&typeof input==='object'&&'url' in input&&!(input instanceof URL)?input.url:input);
+            var m=((init&&init.method)||(input&&input.method)||'GET').toUpperCase();
+            if(res.ok||m!=='GET'||u.indexOf('graph.facebook.com')<0)return res;
+            var txt=await res.clone().text();
+            if(!/reduce the amount of data/i.test(txt))return res;
+            var url=new URL(u),lim=parseInt(url.searchParams.get('limit')||'25',10);
+            for(var n=0;n<4&&lim>5;n++){
+              lim=Math.max(5,Math.floor(lim/2));url.searchParams.set('limit',String(lim));
+              var r2=await of.call(window,url.toString(),init);
+              if(r2.ok)return r2;
+              res=r2;
+              if(!/reduce the amount of data/i.test(await r2.clone().text()))return r2;
+            }
+          }catch(e){}
+          return res;
+        };
+        window.__spaFetchRetry=true;
+      }catch(e){}
+    }
     function fixMetaReads(){
       try{
         if(typeof Meta==='undefined'||!Meta||Meta.__allRetry||typeof Meta.all!=='function')return;
@@ -135,8 +162,8 @@ button:disabled{opacity:.6;cursor:wait}
       }catch(e){}
     }
     try{
-      fixMetaReads();fixAccess();fixHelp();fixGuide();fixText(document.body);
-      new MutationObserver(function(ms){fixAccess();fixHelp();fixGuide();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
+      fixFetch();fixMetaReads();fixAccess();fixHelp();fixGuide();fixText(document.body);
+      new MutationObserver(function(ms){fixMetaReads();fixAccess();fixHelp();fixGuide();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
     }catch(e){}
   }
   async function tryRemembered(){
