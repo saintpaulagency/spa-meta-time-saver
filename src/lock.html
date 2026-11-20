@@ -58,6 +58,30 @@ button:disabled{opacity:.6;cursor:wait}
     document.open();document.write(html);document.close();
     // Time Saved tracker retired (Nov 19 2026): its count lived in each browser and reset whenever keys were re-entered
     var hideSaved=document.createElement('style');hideSaved.textContent='#saved,#chip-saved{display:none!important}';(document.head||document.documentElement).appendChild(hideSaved);
+    spaTextFixes();
+  }
+  // Text fixes on top of the locked app (Nov 19 2026). Fold these into the app source at the next rebuild.
+  function spaTextFixes(){
+    var ACCESS='Which clients the dashboard can post for. Posting a new or edited ad (carousel swaps, fixes that rebuild an ad, next-month drafts) needs spa dash to hold the client’s Facebook Page with “Ads” access. Partial access is enough.'
+      +'<br><b>With it,</b> the post goes straight from this dashboard with the spa dash key, in one click, and works the same for anyone who has the dashboard.'
+      +'<br><b>Without it,</b> the post waits in the Ads Manager queue. Someone has to open Ads Manager in Chrome, signed in to their own Meta account with access to that Page, and have Claude in Chrome post it from there. That’s extra steps every time, and it depends on that person’s login: if they leave or lose access to the Page, those posts stop.'
+      +'<br>Reading, checks, budgets and placements only need the ad account, which spa dash already has for every client.';
+    var SWAP=[
+      ['It only reads.','It also posts Monday replies and changes Status, but only when you click to approve.'],
+      ['The dashboard only reads boards with it.','The dashboard reads the boards with it, and posts replies and changes Status when you click to approve.'],
+      ['Add a system user (Admin) named “SPA dashboard”.','Click the existing “spa dash” system user (Admin). Only add a new one if it’s gone.']
+    ];
+    function fixAccess(){var p=document.querySelector('#v-access p.lede');if(p&&!p.getAttribute('data-fixed')){p.innerHTML=ACCESS;p.setAttribute('data-fixed','1')}}
+    function fixText(root){
+      var t=root&&root.textContent;if(!t)return;
+      if(t.indexOf('only read')<0&&t.indexOf('SPA dashboard”')<0)return;
+      var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),n;
+      while((n=w.nextNode())){for(var i=0;i<SWAP.length;i++){if(n.nodeValue.indexOf(SWAP[i][0])>=0)n.nodeValue=n.nodeValue.split(SWAP[i][0]).join(SWAP[i][1])}}
+    }
+    try{
+      fixAccess();fixText(document.body);
+      new MutationObserver(function(ms){fixAccess();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
+    }catch(e){}
   }
   async function tryRemembered(){
     try{
