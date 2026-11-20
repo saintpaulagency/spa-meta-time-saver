@@ -111,25 +111,28 @@ button:disabled{opacity:.6;cursor:wait}
     function fixAccess(){var p=document.querySelector('#v-access p.lede');if(p&&!p.getAttribute('data-fixed')){p.innerHTML=ACCESS;p.setAttribute('data-fixed','1')}}
     function fixHelp(){
       var h=document.getElementById('v-help');if(!h)return;
+      // The app re-renders this tab, so check for our own blocks each time instead of a flag on the tab
       var first=h.querySelector('p');
-      if(first&&!h.getAttribute('data-top')){
-        h.setAttribute('data-top','1');
-        var tp=document.createElement('p');tp.style.fontWeight='600';tp.textContent=TOP_NOTE;
+      if(first&&!document.getElementById('spa-top-note')){
+        var tp=document.createElement('p');tp.id='spa-top-note';tp.style.fontWeight='600';tp.textContent=TOP_NOTE;
         first.parentNode.insertBefore(tp,first.nextSibling);
+      }
+      var tpn=document.getElementById('spa-top-note');
+      if(tpn&&!document.getElementById('spa-takeover')){
         var tk=document.createElement('div');tk.id='spa-takeover';tk.style.cssText='border:1px solid var(--line,#d7deea);border-left:4px solid #145091;border-radius:10px;padding:12px 16px;margin:12px 0 18px';
         function mk(t,txt){var x=document.createElement(t);if(txt!=null)x.textContent=txt;return x}
-        var h=mk('h3','Taking over the social job (start here)');h.style.marginTop='0';tk.appendChild(h);
+        var hh=mk('h3','Taking over the social job (start here)');hh.style.marginTop='0';tk.appendChild(hh);
         var ip=mk('p');ip.appendChild(document.createTextNode('If someone asks “How do I take over the social job at Saint Paul Agency?”, start here. The rules are the House rules section of the Monday doc '));var lk=mk('a','Meta Time Saver: How It Works');lk.href=TK_DOC;lk.target='_blank';lk.rel='noopener';ip.appendChild(lk);ip.appendChild(document.createTextNode('. If anything here differs, the Monday doc wins.'));tk.appendChild(ip);
         tk.appendChild(mk('b','What you need (once)'));var ol=mk('ol');TK_NEED.forEach(function(x){ol.appendChild(mk('li',x))});tk.appendChild(ol);
         tk.appendChild(mk('b','What the job covers'));var ul=mk('ul');TK_JOB.forEach(function(x){ul.appendChild(mk('li',x))});tk.appendChild(ul);
         tk.appendChild(mk('p',TK_TOOLS));tk.appendChild(mk('p',TK_FIRST));
-        tp.parentNode.insertBefore(tk,tp.nextSibling);
+        tpn.parentNode.insertBefore(tk,tpn.nextSibling);
       }
       var hs=h.querySelectorAll('h3');
       for(var i=0;i<hs.length;i++){
-        if(hs[i].textContent.trim()==='House rules'&&!hs[i].getAttribute('data-fixed')){
-          hs[i].setAttribute('data-fixed','1');
-          var p=document.createElement('p');p.style.fontWeight='600';p.textContent=RULES_NOTE;
+        var nx=hs[i].nextElementSibling;
+        if(hs[i].textContent.trim()==='House rules'&&!(nx&&nx.className==='spa-rules-note')){
+          var p=document.createElement('p');p.className='spa-rules-note';p.style.fontWeight='600';p.textContent=RULES_NOTE;
           hs[i].parentNode.insertBefore(p,hs[i].nextSibling);
         }
       }
