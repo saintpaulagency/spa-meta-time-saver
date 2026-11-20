@@ -67,6 +67,8 @@ button:disabled{opacity:.6;cursor:wait}
       +'<br><b>Without it,</b> the post waits in the Ads Manager queue. Someone has to open Ads Manager in Chrome, signed in to their own Meta account with access to that Page, and have Claude in Chrome post it from there. That’s extra steps every time, and it depends on that person’s login: if they leave or lose access to the Page, those posts stop.'
       +'<br>Reading, checks, budgets and placements only need the ad account, which spa dash already has for every client.';
     var RULES_NOTE='The full, current house rules are the House rules section of the Monday doc “Meta Time Saver: How It Works”. If anything below differs, the Monday doc wins.';
+    var TOP_NOTE='Current house rules: the House rules section of the Monday doc “Meta Time Saver: How It Works”. If anything on this page differs, the Monday doc wins. Time saved was retired on Nov 19, 2026 (its count didn’t carry across browsers): keep logging work so the Log stays complete, but ignore the mentions of Time saved below.';
+    var GUIDE_HEAD='# SPA Ultimate Meta Time Saver: instructions for AI assistants\n';
     var SWAP=[
       ['It only reads.','It also posts Monday replies and changes Status, but only when you click to approve.'],
       ['The dashboard only reads boards with it.','The dashboard reads the boards with it, and posts replies and changes Status when you click to approve.'],
@@ -74,11 +76,27 @@ button:disabled{opacity:.6;cursor:wait}
       ['Meta music off on carousels.','Meta music off on every ad.'],
       ['Don’t reword it or add emojis to it.','Don’t reword it. Ask before adding emojis to it, and add them only after a yes.'],
       ['exactly as written (nothing added;','exactly as written (ask before adding emojis;'],
-      ['Organic proof goes to the Meta owner only:','Organic posts added for a paid video: proof goes to the Meta owner only:']
+      ['caption and emojis, nothing added;','caption and emojis exactly as written; ask before adding emojis;'],
+      ['Organic proof goes to the Meta owner only:','Organic posts added for a paid video: proof goes to the Meta owner only:'],
+      ['2 to 10 cards per carousel.','Dealer car carousels use 10 cards; other carousels 2 to 10.'],
+      ['Never tag Troy, or Evan Harrold','When Rebecca is tagged, tag Sophia too, and the other way round. Never tag Troy, or Evan Harrold'],
+      ['ask an admin to move the dashboard’s GitHub repo (aidanbarnard2/spa-meta-time-saver) to an agency account and to change the team password.','ask an admin to change the team password. The dashboard’s code is already on SPA’s GitHub (saintpaulagency/spa-meta-time-saver).'],
+      ['from the aidanbarnard2/spa-meta-time-saver repo','from the saintpaulagency/spa-meta-time-saver repo'],
+      [GUIDE_HEAD, GUIDE_HEAD+'\n> '+TOP_NOTE+'\n']
     ];
+    function swapStr(s){
+      for(var j=0;j<SWAP.length;j++){if(s.indexOf(SWAP[j][0])>=0&&s.indexOf(SWAP[j][1])<0)s=s.split(SWAP[j][0]).join(SWAP[j][1])}
+      return s;
+    }
     function fixAccess(){var p=document.querySelector('#v-access p.lede');if(p&&!p.getAttribute('data-fixed')){p.innerHTML=ACCESS;p.setAttribute('data-fixed','1')}}
     function fixHelp(){
       var h=document.getElementById('v-help');if(!h)return;
+      var first=h.querySelector('p');
+      if(first&&!h.getAttribute('data-top')){
+        h.setAttribute('data-top','1');
+        var tp=document.createElement('p');tp.style.fontWeight='600';tp.textContent=TOP_NOTE;
+        first.parentNode.insertBefore(tp,first.nextSibling);
+      }
       var hs=h.querySelectorAll('h3');
       for(var i=0;i<hs.length;i++){
         if(hs[i].textContent.trim()==='House rules'&&!hs[i].getAttribute('data-fixed')){
@@ -88,16 +106,34 @@ button:disabled{opacity:.6;cursor:wait}
         }
       }
     }
+    function fixGuide(){try{var g=window.SPA_AI_GUIDE;if(typeof g==='string'){var n=swapStr(g);if(n!==g)window.SPA_AI_GUIDE=n}}catch(e){}}
     function fixText(root){
       var t=root&&root.textContent;if(!t)return;
       var hit=false;for(var i=0;i<SWAP.length;i++){if(t.indexOf(SWAP[i][0])>=0){hit=true;break}}
       if(!hit)return;
       var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),n;
-      while((n=w.nextNode())){for(var j=0;j<SWAP.length;j++){if(n.nodeValue.indexOf(SWAP[j][0])>=0)n.nodeValue=n.nodeValue.split(SWAP[j][0]).join(SWAP[j][1])}}
+      while((n=w.nextNode())){var v=swapStr(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}
+    }
+    // Meta sometimes refuses a big read ("Please reduce the amount of data you're asking for"); retry it in smaller pages
+    function fixMetaReads(){
+      try{
+        if(typeof Meta==='undefined'||!Meta||Meta.__allRetry||typeof Meta.all!=='function')return;
+        var orig=Meta.all;
+        Meta.all=async function(path,params){
+          params=params||{};
+          try{return await orig.call(Meta,path,params)}
+          catch(e){
+            var lim=parseInt(params.limit||'25',10);
+            if(/reduce the amount of data/i.test(String(e&&e.message||e))&&lim>5){var p={};for(var k in params)p[k]=params[k];p.limit=String(Math.max(5,Math.floor(lim/2)));return await Meta.all(path,p)}
+            throw e;
+          }
+        };
+        Meta.__allRetry=true;
+      }catch(e){}
     }
     try{
-      fixAccess();fixHelp();fixText(document.body);
-      new MutationObserver(function(ms){fixAccess();fixHelp();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
+      fixMetaReads();fixAccess();fixHelp();fixGuide();fixText(document.body);
+      new MutationObserver(function(ms){fixAccess();fixHelp();fixGuide();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
     }catch(e){}
   }
   async function tryRemembered(){
