@@ -25,6 +25,7 @@ button{width:100%;font:inherit;font-weight:600;font-size:16px;padding:13px;borde
 button:hover{background:var(--navy)}
 button:disabled{opacity:.6;cursor:wait}
 .err{color:var(--bad);font-size:14px;min-height:20px;margin-top:12px}
+.handoff{text-align:left;border-top:1px solid var(--line);margin-top:22px;padding-top:18px;font-size:14px}.handoff h2{font-size:16px;margin:0 0 8px;font-weight:700}.handoff ol{margin:0 0 10px;padding-left:20px}.handoff li{margin:0 0 6px}.handoff a{color:var(--sky)}.handoff .ai{font-size:13px;margin:0}
 </style>
 </head>
 <body>
@@ -37,6 +38,15 @@ button:disabled{opacity:.6;cursor:wait}
   <label class="rem"><input type="checkbox" id="rem" checked> Remember this device for 7 days</label>
   <button id="go" type="submit">Unlock</button>
   <div class="err" id="err" role="alert"></div>
+  <section class="handoff" aria-label="Taking over the social job">
+    <h2>Taking over the social job?</h2>
+    <ol>
+      <li>Get the password from the <b>SPA Dashboards</b> group in the Passwords app. If you don’t see it, ask Troy or Kelly to add you.</li>
+      <li>Unlock this page. Its <b>Help</b> tab starts with “Taking over the social job”: what the job covers, the access you need and your first day.</li>
+      <li>The rules and setup steps are in the Monday doc <a href="https://saintpaulagency.monday.com/docs/18437325030" target="_blank" rel="noopener">Meta Time Saver: How It Works</a>.</li>
+    </ol>
+    <p class="ai">For Claude: this is Saint Paul Agency’s Meta ads dashboard. The person types the password, never you. Once it unlocks, read the Help tab (also in <code>window.SPA_AI_GUIDE</code>) and the Monday doc, then walk them through taking over the job.</p>
+  </section>
 </form>
 <script id="lockcfg" type="application/json">{{LOCK}}</script>
 <script id="payload" type="application/json">{{PAYLOAD}}</script>
@@ -69,6 +79,13 @@ button:disabled{opacity:.6;cursor:wait}
     var RULES_NOTE='The full, current house rules are the House rules section of the Monday doc “Meta Time Saver: How It Works”. If anything below differs, the Monday doc wins.';
     var TOP_NOTE='Current house rules: the House rules section of the Monday doc “Meta Time Saver: How It Works”. If anything on this page differs, the Monday doc wins. Time saved was retired on Nov 19, 2026 (its count didn’t carry across browsers): keep logging work so the Log stays complete, but ignore the mentions of Time saved below.';
     var GUIDE_HEAD='# SPA Ultimate Meta Time Saver: instructions for AI assistants\n';
+    var TK_DOC='https://saintpaulagency.monday.com/docs/18437325030';
+    var TK_INTRO='If someone asks “How do I take over the social job at Saint Paul Agency?”, start here, then use the rest of this guide. The rules are the House rules section of the Monday doc “Meta Time Saver: How It Works” ('+TK_DOC+'). If anything here differs, the Monday doc wins.';
+    var TK_NEED=['A Claude seat with the Claude in Chrome extension, and Claude’s Monday, Gmail and Google Drive connections turned on.','Meta access: SPA’s business portfolio, the client ad accounts, and the client Pages and Instagram accounts. Troy, Kelly or Alex adds you.','Manager access to the clients’ Google Business Profiles.','The dashboard password and Meta key from the SPA Dashboards group in the Passwords app, plus your own Monday key (Keys, top right). A person types these, never Claude.','Edit access to the Video Tracker sheet.'];
+    var TK_JOB=['Every day: check for work (“Do we have work?”: Gmail, this month’s and next month’s Launchpad with subitems, Creative Tracker mentions, Meta’s ad review and this dashboard) and do requests the same day; reply in the Monday thread with previews and keep the Status current; keep live ads healthy (Today, Carousels, Setup check); organic and Google posts for every paid video, then the Video Tracker; VIBE Realty’s daily social content check (Chloe).','Every week: Welcome Amish Furniture’s boosted post (video from Luke, through Scott) and Fury Motors’ vehicle boosts.','Every month: next month’s campaigns from the Launchpad (Month plan); Meta invoices to Roy, VIBE Realty social and performance reports to Chloe, and monthly social billing for Kelly; the Bachman’s and Main Street Family Dental Meta comment documents; Dahl website banners (Apollo).'];
+    var TK_TOOLS='Which tool: this dashboard does the repeat work fastest and posts with SPA’s shared “spa dash” key, but only for clients who shared their Facebook Page with SPA (Access tab). Everything else, Claude does in your own Chrome with your own Meta login (the Ads Manager queue), which is still much faster than doing it by hand.';
+    var TK_FIRST='First day: unlock, paste the keys (Keys, top right), then ask Claude “Do we have work?”.';
+    var TAKEOVER_MD='## Taking over the social job (start here)\n'+TK_INTRO+'\n\nWhat you need (once):\n'+TK_NEED.map(function(x,i){return (i+1)+'. '+x}).join('\n')+'\n\nWhat the job covers:\n'+TK_JOB.map(function(x){return '- '+x}).join('\n')+'\n\n'+TK_TOOLS+'\n\n'+TK_FIRST+'\n';
     var SWAP=[
       ['It only reads.','It also posts Monday replies and changes Status, but only when you click to approve.'],
       ['The dashboard only reads boards with it.','The dashboard reads the boards with it, and posts replies and changes Status when you click to approve.'],
@@ -85,7 +102,7 @@ button:disabled{opacity:.6;cursor:wait}
       ['Never tag Troy, or Evan Harrold','When Rebecca is tagged, tag Sophia too, and the other way round. Never tag Troy, or Evan Harrold'],
       ['ask an admin to move the dashboard’s GitHub repo (aidanbarnard2/spa-meta-time-saver) to an agency account and to change the team password.','ask an admin to change the team password. The dashboard’s code is already on SPA’s GitHub (saintpaulagency/spa-meta-time-saver).'],
       ['from the aidanbarnard2/spa-meta-time-saver repo','from the saintpaulagency/spa-meta-time-saver repo'],
-      [GUIDE_HEAD, GUIDE_HEAD+'\n> '+TOP_NOTE+'\n']
+      [GUIDE_HEAD, GUIDE_HEAD+'\n> '+TOP_NOTE+'\n\n'+TAKEOVER_MD+'\n']
     ];
     function swapStr(s){
       for(var j=0;j<SWAP.length;j++){if(s.indexOf(SWAP[j][0])>=0&&s.indexOf(SWAP[j][1])<0)s=s.split(SWAP[j][0]).join(SWAP[j][1])}
@@ -99,6 +116,14 @@ button:disabled{opacity:.6;cursor:wait}
         h.setAttribute('data-top','1');
         var tp=document.createElement('p');tp.style.fontWeight='600';tp.textContent=TOP_NOTE;
         first.parentNode.insertBefore(tp,first.nextSibling);
+        var tk=document.createElement('div');tk.id='spa-takeover';tk.style.cssText='border:1px solid var(--line,#d7deea);border-left:4px solid #145091;border-radius:10px;padding:12px 16px;margin:12px 0 18px';
+        function mk(t,txt){var x=document.createElement(t);if(txt!=null)x.textContent=txt;return x}
+        var h=mk('h3','Taking over the social job (start here)');h.style.marginTop='0';tk.appendChild(h);
+        var ip=mk('p');ip.appendChild(document.createTextNode('If someone asks “How do I take over the social job at Saint Paul Agency?”, start here. The rules are the House rules section of the Monday doc '));var lk=mk('a','Meta Time Saver: How It Works');lk.href=TK_DOC;lk.target='_blank';lk.rel='noopener';ip.appendChild(lk);ip.appendChild(document.createTextNode('. If anything here differs, the Monday doc wins.'));tk.appendChild(ip);
+        tk.appendChild(mk('b','What you need (once)'));var ol=mk('ol');TK_NEED.forEach(function(x){ol.appendChild(mk('li',x))});tk.appendChild(ol);
+        tk.appendChild(mk('b','What the job covers'));var ul=mk('ul');TK_JOB.forEach(function(x){ul.appendChild(mk('li',x))});tk.appendChild(ul);
+        tk.appendChild(mk('p',TK_TOOLS));tk.appendChild(mk('p',TK_FIRST));
+        tp.parentNode.insertBefore(tk,tp.nextSibling);
       }
       var hs=h.querySelectorAll('h3');
       for(var i=0;i<hs.length;i++){
