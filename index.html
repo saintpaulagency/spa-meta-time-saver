@@ -66,21 +66,38 @@ button:disabled{opacity:.6;cursor:wait}
       +'<br><b>With it,</b> the post goes straight from this dashboard with the spa dash key, in one click, and works the same for anyone who has the dashboard.'
       +'<br><b>Without it,</b> the post waits in the Ads Manager queue. Someone has to open Ads Manager in Chrome, signed in to their own Meta account with access to that Page, and have Claude in Chrome post it from there. That’s extra steps every time, and it depends on that person’s login: if they leave or lose access to the Page, those posts stop.'
       +'<br>Reading, checks, budgets and placements only need the ad account, which spa dash already has for every client.';
+    var RULES_NOTE='The full, current house rules are the House rules section of the Monday doc “Meta Time Saver: How It Works”. If anything below differs, the Monday doc wins.';
     var SWAP=[
       ['It only reads.','It also posts Monday replies and changes Status, but only when you click to approve.'],
       ['The dashboard only reads boards with it.','The dashboard reads the boards with it, and posts replies and changes Status when you click to approve.'],
-      ['Add a system user (Admin) named “SPA dashboard”.','Click the existing “spa dash” system user (Admin). Only add a new one if it’s gone.']
+      ['Add a system user (Admin) named “SPA dashboard”.','Click the existing “spa dash” system user (Admin). Only add a new one if it’s gone.'],
+      ['Meta music off on carousels.','Meta music off on every ad.'],
+      ['Don’t reword it or add emojis to it.','Don’t reword it. Ask before adding emojis to it, and add them only after a yes.'],
+      ['exactly as written (nothing added;','exactly as written (ask before adding emojis;'],
+      ['Organic proof goes to the Meta owner only:','Organic posts added for a paid video: proof goes to the Meta owner only:']
     ];
     function fixAccess(){var p=document.querySelector('#v-access p.lede');if(p&&!p.getAttribute('data-fixed')){p.innerHTML=ACCESS;p.setAttribute('data-fixed','1')}}
+    function fixHelp(){
+      var h=document.getElementById('v-help');if(!h)return;
+      var hs=h.querySelectorAll('h3');
+      for(var i=0;i<hs.length;i++){
+        if(hs[i].textContent.trim()==='House rules'&&!hs[i].getAttribute('data-fixed')){
+          hs[i].setAttribute('data-fixed','1');
+          var p=document.createElement('p');p.style.fontWeight='600';p.textContent=RULES_NOTE;
+          hs[i].parentNode.insertBefore(p,hs[i].nextSibling);
+        }
+      }
+    }
     function fixText(root){
       var t=root&&root.textContent;if(!t)return;
-      if(t.indexOf('only read')<0&&t.indexOf('SPA dashboard”')<0)return;
+      var hit=false;for(var i=0;i<SWAP.length;i++){if(t.indexOf(SWAP[i][0])>=0){hit=true;break}}
+      if(!hit)return;
       var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),n;
-      while((n=w.nextNode())){for(var i=0;i<SWAP.length;i++){if(n.nodeValue.indexOf(SWAP[i][0])>=0)n.nodeValue=n.nodeValue.split(SWAP[i][0]).join(SWAP[i][1])}}
+      while((n=w.nextNode())){for(var j=0;j<SWAP.length;j++){if(n.nodeValue.indexOf(SWAP[j][0])>=0)n.nodeValue=n.nodeValue.split(SWAP[j][0]).join(SWAP[j][1])}}
     }
     try{
-      fixAccess();fixText(document.body);
-      new MutationObserver(function(ms){fixAccess();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
+      fixAccess();fixHelp();fixText(document.body);
+      new MutationObserver(function(ms){fixAccess();fixHelp();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
     }catch(e){}
   }
   async function tryRemembered(){
