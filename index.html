@@ -42,10 +42,10 @@ button:disabled{opacity:.6;cursor:wait}
     <h2>Taking over the social job?</h2>
     <ol>
       <li>Get the password from the <b>SPA Dashboards</b> group in the Passwords app. If you don’t see it, ask Troy or Kelly to add you.</li>
-      <li>Unlock this page. Its <b>Help</b> tab starts with “Taking over the social job”: what the job covers, the access you need and your first day.</li>
-      <li>The rules and setup steps are in the Monday doc <a href="https://saintpaulagency.monday.com/docs/18437325030" target="_blank" rel="noopener">Meta Time Saver: How It Works</a>.</li>
+      <li>Unlock this page. Its <b>Help</b> tab is the Monday doc <a href="https://saintpaulagency.monday.com/docs/18437325030" target="_blank" rel="noopener">Meta Time Saver: How It Works</a>: what the job covers, the access you need, your first day and the rules.</li>
+      <li>Start with “Start here: running the job with Claude” in that doc.</li>
     </ol>
-    <p class="ai">For Claude: this is Saint Paul Agency’s Meta ads dashboard. The person types the password, never you. Once it unlocks, read the Help tab (also in <code>window.SPA_AI_GUIDE</code>) and the Monday doc, then walk them through taking over the job.</p>
+    <p class="ai">For Claude: this is Saint Paul Agency’s Meta ads dashboard. The person types the password, never you. Once it unlocks, read the Help tab (the Monday doc “Meta Time Saver: How It Works”, also in <code>window.SPA_AI_GUIDE</code>), then walk them through taking over the job.</p>
   </section>
 </form>
 <script id="lockcfg" type="application/json">{"salt": "eI/qCnbLjR35WsL0ieiVrg==", "iterations": 600000}</script>
@@ -102,15 +102,86 @@ button:disabled{opacity:.6;cursor:wait}
       ['Never tag Troy, or Evan Harrold','When Rebecca is tagged, tag Sophia too, and the other way round. Never tag Troy, or Evan Harrold'],
       ['ask an admin to move the dashboard’s GitHub repo (aidanbarnard2/spa-meta-time-saver) to an agency account and to change the team password.','ask an admin to change the team password. The dashboard’s code is already on SPA’s GitHub (saintpaulagency/spa-meta-time-saver).'],
       ['from the aidanbarnard2/spa-meta-time-saver repo','from the saintpaulagency/spa-meta-time-saver repo'],
-      [GUIDE_HEAD, GUIDE_HEAD+'\n> '+TOP_NOTE+'\n\n'+TAKEOVER_MD+'\n']
+      ['The client approves it.','An Admin of the client’s own business portfolio approves it (usually the client; one Admin is enough). If the Page already shows under SPA’s Accounts → Pages, skip to the next step.']
     ];
+    var OLD_GUIDE_TOP=GUIDE_HEAD+'\n> '+TOP_NOTE+'\n\n'+TAKEOVER_MD+'\n';
     function swapStr(s){
       for(var j=0;j<SWAP.length;j++){if(s.indexOf(SWAP[j][0])>=0&&s.indexOf(SWAP[j][1])<0)s=s.split(SWAP[j][0]).join(SWAP[j][1])}
       return s;
     }
     function fixAccess(){var p=document.querySelector('#v-access p.lede');if(p&&!p.getAttribute('data-fixed')){p.innerHTML=ACCESS;p.setAttribute('data-fixed','1')}}
-    function fixHelp(){
+    // Help tab = the Monday doc "Meta Time Saver: How It Works", loaded live with the viewer's own Monday key (Nov 20 2026).
+    // Edit the doc in Monday and Help follows. The app's own Help text only shows if the doc has never loaded in this browser.
+    var DOC_ID='49356838',DOC_CACHE='spa_help_doc_v1',DOC_FRESH=5*60*1000;
+    var DOC={md:null,at:0,err:null,loading:false,fresh:0};
+    try{var dc=JSON.parse(localStorage.getItem(DOC_CACHE)||'null');if(dc&&dc.md){DOC.md=dc.md;DOC.at=dc.at||0}}catch(e){}
+    function mondayKey(){try{return(typeof Monday!=='undefined'&&Monday&&typeof Monday.key==='function')?Monday.key():null}catch(e){return null}}
+    function loadDoc(force){
+      if(DOC.loading)return;
+      if(!force&&DOC.fresh&&Date.now()-DOC.fresh<DOC_FRESH)return;
+      var key=mondayKey();
+      if(!key){DOC.err='No Monday key in this browser (Keys, top right).';DOC.fresh=Date.now();renderDoc();return}
+      DOC.loading=true;
+      fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':key,'API-Version':'2026-01'},body:JSON.stringify({query:'query($id:ID!){export_markdown_from_doc(docId:$id){success markdown error}}',variables:{id:DOC_ID}})})
+        .then(function(r){return r.json()})
+        .then(function(j){
+          var x=j&&j.data&&j.data.export_markdown_from_doc;
+          if(x&&x.success&&x.markdown){DOC.md=x.markdown;DOC.at=Date.now();DOC.err=null;try{localStorage.setItem(DOC_CACHE,JSON.stringify({md:DOC.md,at:DOC.at}))}catch(e){}}
+          else DOC.err=(j&&j.errors&&j.errors[0]&&j.errors[0].message)||(x&&x.error)||'Monday sent no doc.';
+        })
+        .catch(function(e){DOC.err=String(e&&e.message||e)})
+        .then(function(){DOC.loading=false;DOC.fresh=Date.now();renderDoc();fixGuide()});
+    }
+    function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+    function mdInline(s){
+      s=escH(String(s).replace(/\*\*\*\*/g,''));
+      s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,function(m,t,u){return '<a href="'+u+'" target="_blank" rel="noopener">'+t+'</a>'});
+      s=s.replace(/\*\*([^*]+?)\*\*/g,'<b>$1</b>');
+      return s;
+    }
+    function md2html(md){
+      var L=String(md).split('\n'),out=[],i=0,m;
+      function listAt(re){var it=[];while(i<L.length){var u=L[i].trim();if(re.test(u)){it.push(u.replace(re,''));i++}else if(!u&&re.test((L[i+1]||'').trim())){i++}else break}return it}
+      while(i<L.length){
+        var t=L[i].trim();
+        if(!t){i++;continue}
+        if((m=t.match(/^(#{1,4})\s+(.*)$/))){var tg=m[1].length<=2?'h3':'h4';out.push('<'+tg+'>'+mdInline(m[2])+'</'+tg+'>');i++;continue}
+        if(/^>/.test(t)){out.push('<p class="spa-doc-q">'+mdInline(t.replace(/^>\s?/,''))+'</p>');i++;continue}
+        if(t.charAt(0)==='|'){
+          var rows=[];while(i<L.length&&L[i].trim().charAt(0)==='|'){rows.push(L[i].trim());i++}
+          var tb='<div class="spa-doc-tw"><table>';
+          rows.forEach(function(r,k){if(/^\|\s*:?-{3}/.test(r))return;var cs=r.replace(/^\|/,'').replace(/\|$/,'').split('|');var c=k===0?'th':'td';tb+='<tr>'+cs.map(function(x){return '<'+c+'>'+mdInline(x.trim())+'</'+c+'>'}).join('')+'</tr>'});
+          out.push(tb+'</table></div>');continue;
+        }
+        if(/^[-*]\s+/.test(t)){out.push('<ul>'+listAt(/^[-*]\s+/).map(function(x){return '<li>'+mdInline(x)+'</li>'}).join('')+'</ul>');continue}
+        if(/^\d+\.\s+/.test(t)){out.push('<ol>'+listAt(/^\d+\.\s+/).map(function(x){return '<li>'+mdInline(x)+'</li>'}).join('')+'</ol>');continue}
+        out.push('<p>'+mdInline(t)+'</p>');i++;
+      }
+      return out.join('');
+    }
+    function docCss(on){
+      var st=document.getElementById('spa-doc-css');
+      if(on&&!st){st=document.createElement('style');st.id='spa-doc-css';st.textContent='#v-help>*:not(h2):not(#spa-doc-help){display:none!important}#spa-doc-help .spa-doc-src{font-size:13px;opacity:.85;margin:0 0 14px}#spa-doc-help .spa-doc-src button{margin-left:6px}#spa-doc-help .spa-doc-q{font-weight:600}#spa-doc-help h3{margin-top:26px}#spa-doc-help .spa-doc-tw{overflow-x:auto;margin:10px 0}#spa-doc-help table{border-collapse:collapse;width:100%}#spa-doc-help th,#spa-doc-help td{border:1px solid var(--line,#d7deea);padding:6px 10px;text-align:left;vertical-align:top}#spa-doc-help li{margin:4px 0}';(document.head||document.documentElement).appendChild(st)}
+      if(!on&&st)st.remove();
+    }
+    function renderDoc(){
       var h=document.getElementById('v-help');if(!h)return;
+      if(!DOC.md){docCss(false);var ob=document.getElementById('spa-doc-help');if(ob)ob.remove();legacyHelp(h);return}
+      var box=document.getElementById('spa-doc-help');
+      if(!box){box=document.createElement('div');box.id='spa-doc-help';var t2=h.querySelector('h2');if(t2&&t2.parentNode===h)h.insertBefore(box,t2.nextSibling);else h.insertBefore(box,h.firstChild)}
+      var sig=DOC.at+'|'+(DOC.err||'');
+      if(box.getAttribute('data-sig')!==sig){
+        var when=DOC.at?new Date(DOC.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+        var src='<p class="spa-doc-src">This is the Monday doc <a href="'+TK_DOC+'" target="_blank" rel="noopener">Meta Time Saver: How It Works</a>, loaded from Monday '+escH(when)+'. To change Help, edit the doc. <button type="button" class="btn" id="spa-doc-reload">Reload</button></p>';
+        if(DOC.err)src+='<p class="spa-doc-src"><b>Couldn’t load the latest doc from Monday</b> ('+escH(DOC.err)+'). Showing the copy from '+escH(when)+'.</p>';
+        box.innerHTML=src+md2html(DOC.md);box.setAttribute('data-sig',sig);
+        var rb=document.getElementById('spa-doc-reload');if(rb)rb.onclick=function(){loadDoc(true)};
+      }
+      docCss(true);
+      if(h.offsetParent!==null)loadDoc(false);
+    }
+    function legacyHelp(h){
+
       // The app re-renders this tab, so check for our own blocks each time instead of a flag on the tab
       var first=h.querySelector('p');
       if(first&&!document.getElementById('spa-top-note')){
@@ -137,7 +208,18 @@ button:disabled{opacity:.6;cursor:wait}
         }
       }
     }
-    function fixGuide(){try{var g=window.SPA_AI_GUIDE;if(typeof g==='string'){var n=swapStr(g);if(n!==g)window.SPA_AI_GUIDE=n}}catch(e){}}
+    function fixHelp(){renderDoc()}
+    function fixGuide(){
+      try{
+        var g=window.SPA_AI_GUIDE;if(typeof g!=='string')return;
+        var MARK='\n<!-- spa-doc-end -->\n',base=g.indexOf(MARK)>=0?g.slice(g.indexOf(MARK)+MARK.length):g;
+        base=swapStr(base.split(OLD_GUIDE_TOP).join(GUIDE_HEAD));
+        var n;
+        if(DOC.md)n=GUIDE_HEAD+'\n> Part 1 is the Monday doc “Meta Time Saver: How It Works” ('+TK_DOC+'), loaded live. It is also the dashboard’s Help tab, and its House rules win over anything in part 2.\n\n## Part 1: the How It Works doc\n\n'+DOC.md+'\n\n## Part 2: how this dashboard works (functions an AI can call in this tab)\n'+MARK+base.split(GUIDE_HEAD).join('');
+        else n=base.split(GUIDE_HEAD).join(OLD_GUIDE_TOP);
+        if(n!==g)window.SPA_AI_GUIDE=n;
+      }catch(e){}
+    }
     function fixText(root){
       var t=root&&root.textContent;if(!t)return;
       var hit=false;for(var i=0;i<SWAP.length;i++){if(t.indexOf(SWAP[i][0])>=0){hit=true;break}}
@@ -190,7 +272,7 @@ button:disabled{opacity:.6;cursor:wait}
       }catch(e){}
     }
     try{
-      fixFetch();fixMetaReads();fixAccess();fixHelp();fixGuide();fixText(document.body);
+      fixFetch();fixMetaReads();fixAccess();fixHelp();fixGuide();fixText(document.body);loadDoc(false);
       new MutationObserver(function(ms){fixMetaReads();fixAccess();fixHelp();fixGuide();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
     }catch(e){}
   }
