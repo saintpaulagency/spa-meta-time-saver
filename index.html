@@ -120,7 +120,7 @@ button:disabled{opacity:.6;cursor:wait}
       if(DOC.loading)return;
       if(!force&&DOC.fresh&&Date.now()-DOC.fresh<DOC_FRESH)return;
       var key=mondayKey();
-      if(!key){DOC.err='No Monday key in this browser (Keys, top right).';DOC.fresh=Date.now();renderDoc();return}
+      if(!key){DOC.err='No Monday key in this browser (Keys, top right).';DOC.tries=(DOC.tries||0)+1;if(DOC.tries<40)setTimeout(function(){loadDoc(false)},1500);else{DOC.fresh=Date.now();renderDoc()}return}
       DOC.loading=true;
       fetch('https://api.monday.com/v2',{method:'POST',headers:{'Content-Type':'application/json','Authorization':key,'API-Version':'2026-01'},body:JSON.stringify({query:'query($id:ID!){export_markdown_from_doc(docId:$id){success markdown error}}',variables:{id:DOC_ID}})})
         .then(function(r){return r.json()})
@@ -166,7 +166,7 @@ button:disabled{opacity:.6;cursor:wait}
     }
     function renderDoc(){
       var h=document.getElementById('v-help');if(!h)return;
-      if(!DOC.md){docCss(false);var ob=document.getElementById('spa-doc-help');if(ob)ob.remove();legacyHelp(h);return}
+      if(!DOC.md){docCss(false);var ob=document.getElementById('spa-doc-help');if(ob)ob.remove();legacyHelp(h);loadDoc(false);return}
       var box=document.getElementById('spa-doc-help');
       if(!box){box=document.createElement('div');box.id='spa-doc-help';var t2=h.querySelector('h2');if(t2&&t2.parentNode===h)h.insertBefore(box,t2.nextSibling);else h.insertBefore(box,h.firstChild)}
       var sig=DOC.at+'|'+(DOC.err||'');
