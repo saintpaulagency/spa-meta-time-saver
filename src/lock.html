@@ -307,6 +307,28 @@ button:disabled{opacity:.6;cursor:wait}
         for(var k=0;k<g.length;k++){var h=g[k].querySelector('h4'),nt=g[k].querySelector('.note');if(h&&/What.s live/.test(h.textContent)&&nt&&nt.textContent!=='Running in Meta right now, from the latest read.')nt.textContent='Running in Meta right now, from the latest read.'}
       }catch(e){}
     }
+    // Setup check: an account manager's caption counts as Monday copy only while that month's Monday threads are loaded, so
+    // on page load (before Monday is read) or with another month open in Month plan, it showed ~60 false "no emoji" notes.
+    // Remember every caption once it has been matched to a Monday message (Nov 23 2026).
+    function fixCaptionCache(){
+      try{
+        if(window.__spaCapWrap||typeof captionFromMonday!=='function')return;
+        var orig=captionFromMonday,KEYC='spa_am_captions_v1',seen;
+        try{seen=JSON.parse(localStorage.getItem(KEYC)||'[]')}catch(e){seen=[]}
+        var set={};for(var i=0;i<seen.length;i++)set[seen[i]]=1;
+        function hk(s){var x=5381;for(var i=0;i<s.length;i++)x=((x*33)^s.charCodeAt(i))>>>0;return x.toString(36)+':'+s.length}
+        window.captionFromMonday=function(text){
+          var r=orig.apply(this,arguments);
+          try{
+            var t=typeof norm==='function'?norm(text):String(text||'');if(t.length<20)return r;
+            var k=hk(t);
+            if(r){if(!set[k]){set[k]=1;seen.push(k);if(seen.length>3000)seen=seen.slice(-3000);try{localStorage.setItem(KEYC,JSON.stringify(seen))}catch(e){}}return true}
+            return !!set[k];
+          }catch(e){return r}
+        };
+        window.__spaCapWrap=true;
+      }catch(e){}
+    }
     // Access tab: its counts include paused and not-yet-started ads, so the headings say so
     function fixAccessHeads(){
       try{
@@ -335,8 +357,8 @@ button:disabled{opacity:.6;cursor:wait}
       }catch(e){}
     }
     try{
-      fixFetch();fixMetaReads();fixAccess();fixHelp();fixGuide();fixLive();fixAccessHeads();fixText(document.body);loadDoc(false);
-      new MutationObserver(function(ms){fixMetaReads();fixAccess();fixHelp();fixGuide();fixLive();fixAccessHeads();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
+      fixFetch();fixMetaReads();fixAccess();fixHelp();fixGuide();fixCaptionCache();fixLive();fixAccessHeads();fixText(document.body);loadDoc(false);
+      new MutationObserver(function(ms){fixMetaReads();fixAccess();fixHelp();fixGuide();fixCaptionCache();fixLive();fixAccessHeads();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
     }catch(e){}
   }
   async function tryRemembered(){
