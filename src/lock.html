@@ -102,7 +102,12 @@ button:disabled{opacity:.6;cursor:wait}
       ['Never tag Troy, or Evan Harrold','When Rebecca is tagged, tag Sophia too, and the other way round. Never tag Troy, or Evan Harrold'],
       ['ask an admin to move the dashboard’s GitHub repo (aidanbarnard2/spa-meta-time-saver) to an agency account and to change the team password.','ask an admin to change the team password. The dashboard’s code is already on SPA’s GitHub (saintpaulagency/spa-meta-time-saver).'],
       ['from the aidanbarnard2/spa-meta-time-saver repo','from the saintpaulagency/spa-meta-time-saver repo'],
-      ['The client approves it.','An Admin of the client’s own business portfolio approves it (usually the client; one Admin is enough). If the Page already shows under SPA’s Accounts → Pages, skip to the next step.']
+      ['The client approves it.','An Admin of the client’s own business portfolio approves it (usually the client; one Admin is enough). If the Page already shows under SPA’s Accounts → Pages, skip to the next step.'],
+      // "live" in the app means every ad whose end date hasn't passed, paused and not-yet-started ones included (Nov 23 2026)
+      ['Every live ad that isn’t about to end matches the house setup.','Every running or scheduled ad that isn’t about to end matches the house setup.'],
+      ['Every live ad matches the house setup.','Every running or scheduled ad matches the house setup.'],
+      ['Every live ad has the house setup that matters.','Every running or scheduled ad has the house setup that matters.'],
+      ['live ads the dashboard can post (boosted posts not counted)','ads the dashboard can post (running, scheduled or paused; boosted posts not counted)']
     ];
     var OLD_GUIDE_TOP=GUIDE_HEAD+'\n> '+TOP_NOTE+'\n\n'+TAKEOVER_MD+'\n';
     function swapStr(s){
@@ -255,6 +260,64 @@ button:disabled{opacity:.6;cursor:wait}
         window.__spaFetchRetry=true;
       }catch(e){}
     }
+    // Today's "What's live" tiles count what is actually running (Nov 23 2026). The app's ad list also holds paused ads and
+    // ads whose ad set hasn't started yet (next month's campaigns built early), so its totals overstated "live right now".
+    function liveSplit(){
+      try{
+        if(typeof S==='undefined'||!S||!Array.isArray(S.ads))return null;
+        var now=Date.now(),r={run:0,sched:0,paused:0,rej:0,rev:0,cRun:0,cSched:0,cPaused:0,cRej:0,cRev:0,camps:{}};
+        var cars=typeof carouselAds==='function'?carouselAds():[],isCar={};
+        for(var i=0;i<cars.length;i++)isCar[cars[i].id]=1;
+        for(var j=0;j<S.ads.length;j++){
+          var a=S.ads[j],as=(S.as&&S.as[a.adset])||{},st=as.start_time?Date.parse(as.start_time):0;
+          var s=a.status||'',k=st>now?'sched':/PAUSED/.test(s)?'paused':/DISAPPROVED/.test(s)?'rej':'run',rv=k==='run'&&/PENDING_REVIEW|IN_PROCESS/.test(s);
+          r[k]++;if(rv)r.rev++;
+          if(isCar[a.id]){if(k==='run'){r.cRun++;r.camps[a.campaign]=1;if(rv)r.cRev++}else if(k==='sched')r.cSched++;else if(k==='rej')r.cRej++;else r.cPaused++}
+        }
+        r.cCamps=Object.keys(r.camps).length;
+        return r;
+      }catch(e){return null}
+    }
+    function liveTile(span,num,label,note){
+      var btn=span.closest?span.closest('.stat'):null;if(!btn)return;
+      var b=btn.querySelector('.stat-top b');if(b&&b.textContent!==String(num))b.textContent=String(num);
+      if(span.textContent!==label)span.textContent=label;
+      var n=btn.querySelector('.spa-live-note');
+      if(!note){if(n)n.remove();return}
+      if(!n){n=document.createElement('span');n.className='spa-live-note';n.style.cssText='display:block;font-size:12px;opacity:.8;margin-top:2px';span.parentNode.insertBefore(n,span.nextSibling)}
+      if(n.textContent!==note)n.textContent=note;
+    }
+    function pl(n,w){return n+' '+w+(n===1?'':'s')}
+    // ads in review after an edit keep running their approved version, so they count as running
+    function liveNote(rev,sched,paused,rej){var o=[],p=[];if(rev)o.push('Includes '+rev+' in review.');if(sched)p.push(sched+' waiting to start');if(paused)p.push(paused+' paused');if(rej)p.push(rej+' rejected');if(p.length)o.push('Not counted: '+p.join(', ')+'.');return o.join(' ')}
+    function fixLive(){
+      try{
+        var v=document.getElementById('v-today');if(!v)return;
+        var spans=v.querySelectorAll('.stat span'),adsSpan=null,carSpan=null;
+        for(var i=0;i<spans.length;i++){
+          var t=spans[i].getAttribute('data-spa-live')||spans[i].textContent.trim();
+          if(t==='live ads this month'){adsSpan=spans[i];adsSpan.setAttribute('data-spa-live','live ads this month')}
+          else if(t==='live carousels'){carSpan=spans[i];carSpan.setAttribute('data-spa-live','live carousels')}
+        }
+        if(!adsSpan&&!carSpan)return;
+        var r=liveSplit();if(!r)return;
+        if(adsSpan)liveTile(adsSpan,r.run,'ads running in Meta now',liveNote(r.rev,r.sched,r.paused,r.rej));
+        if(carSpan)liveTile(carSpan,r.cRun,'carousel ads running now'+(r.cCamps?' ('+pl(r.cCamps,'campaign')+')':''),liveNote(r.cRev,r.cSched,r.cPaused,r.cRej));
+        var g=v.querySelectorAll('.sgroup-h');
+        for(var k=0;k<g.length;k++){var h=g[k].querySelector('h4'),nt=g[k].querySelector('.note');if(h&&/What.s live/.test(h.textContent)&&nt&&nt.textContent!=='Running in Meta right now, from the latest read.')nt.textContent='Running in Meta right now, from the latest read.'}
+      }catch(e){}
+    }
+    // Access tab: its counts include paused and not-yet-started ads, so the headings say so
+    function fixAccessHeads(){
+      try{
+        var th=document.querySelectorAll('#v-access th');
+        for(var i=0;i<th.length;i++){
+          var t=th[i].textContent.trim();
+          if(t==='Live ads')th[i].textContent='Ads';
+          else if(t==='What’s live'||t==='What\'s live')th[i].textContent='Ads (running, scheduled or paused)';
+        }
+      }catch(e){}
+    }
     function fixMetaReads(){
       try{
         if(typeof Meta==='undefined'||!Meta||Meta.__allRetry||typeof Meta.all!=='function')return;
@@ -272,8 +335,8 @@ button:disabled{opacity:.6;cursor:wait}
       }catch(e){}
     }
     try{
-      fixFetch();fixMetaReads();fixAccess();fixHelp();fixGuide();fixText(document.body);loadDoc(false);
-      new MutationObserver(function(ms){fixMetaReads();fixAccess();fixHelp();fixGuide();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
+      fixFetch();fixMetaReads();fixAccess();fixHelp();fixGuide();fixLive();fixAccessHeads();fixText(document.body);loadDoc(false);
+      new MutationObserver(function(ms){fixMetaReads();fixAccess();fixHelp();fixGuide();fixLive();fixAccessHeads();for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)fixText(a[j])}}}).observe(document.documentElement,{childList:true,subtree:true});
     }catch(e){}
   }
   async function tryRemembered(){
