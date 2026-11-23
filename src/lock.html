@@ -107,7 +107,8 @@ button:disabled{opacity:.6;cursor:wait}
       ['Every live ad that isn’t about to end matches the house setup.','Every running or scheduled ad that isn’t about to end matches the house setup.'],
       ['Every live ad matches the house setup.','Every running or scheduled ad matches the house setup.'],
       ['Every live ad has the house setup that matters.','Every running or scheduled ad has the house setup that matters.'],
-      ['live ads the dashboard can post (boosted posts not counted)','ads the dashboard can post (running, scheduled or paused; boosted posts not counted)']
+      ['live ads the dashboard can post (boosted posts not counted)','ads the dashboard can post (running, scheduled or paused; boosted posts not counted)'],
+      ['Every live ad against the house setup:','Every ad that is running, scheduled or paused, checked against the house setup:']
     ];
     var OLD_GUIDE_TOP=GUIDE_HEAD+'\n> '+TOP_NOTE+'\n\n'+TAKEOVER_MD+'\n';
     function swapStr(s){
@@ -336,7 +337,7 @@ button:disabled{opacity:.6;cursor:wait}
         for(var i=0;i<th.length;i++){
           var t=th[i].textContent.trim();
           if(t==='Live ads')th[i].textContent='Ads';
-          else if(t==='What’s live'||t==='What\'s live')th[i].textContent='Ads (running, scheduled or paused)';
+          else if(t==='What’s live'||t==='What\'s live')th[i].textContent='What they are (running, scheduled or paused)';
         }
       }catch(e){}
     }
