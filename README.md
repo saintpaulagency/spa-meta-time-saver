@@ -41,14 +41,17 @@ DASH_PASSWORD=... python3 tools/pack.py pack     # after editing the source
 
 `targeting-map/` is the Meta Targeting Map (every live campaign's location targeting drawn
 around the client's stores), so the team can open it without Claude. It opens from the
-**Open map** links in the Meta Location Targeting Tracker sheet. The page is encrypted with
-a key that lives only in those links (the part after `k=`), so the repo holds nothing readable.
+**Open map** links in the Meta Location Targeting Tracker sheet and is locked with the team
+password, the same one as this dashboard (location targeting is sensitive). A device that
+unlocked the dashboard with "Remember this device" opens it straight away (same site).
 
-To publish a new version of the map:
+The map is encrypted with a fresh data key, and that key is stored only wrapped with the team
+key, so nothing readable is in the repo and no tool ever needs the password. To publish a new
+version, get `MAP_DATA_KEY` and `MAP_WRAPPED_KEY` from an unlocked dashboard tab (snippet at
+the top of `tools/targeting_map.py`), then:
 
 ```
-MAP_KEY=<key from the sheet's Map links> python3 tools/targeting_map.py path/to/map.html
+MAP_DATA_KEY=... MAP_WRAPPED_KEY='{"iv":"...","ct":"..."}' python3 tools/targeting_map.py path/to/map.html
 ```
 
-Without `MAP_KEY` the tool makes a new key; then update the two Map formulas in the sheet
-('By client'!F2 and 'By campaign'!F2). Never commit the key.
+Never commit `MAP_DATA_KEY`.
