@@ -36,3 +36,19 @@ DASH_PASSWORD=... python3 tools/pack.py unpack   # app source is kept locked in 
 DASH_PASSWORD=... python3 tools/build.py         # writes index.html
 DASH_PASSWORD=... python3 tools/pack.py pack     # after editing the source
 ```
+
+## Meta Targeting Map
+
+`targeting-map/` is the Meta Targeting Map (every live campaign's location targeting drawn
+around the client's stores), so the team can open it without Claude. It opens from the
+**Open map** links in the Meta Location Targeting Tracker sheet. The page is encrypted with
+a key that lives only in those links (the part after `k=`), so the repo holds nothing readable.
+
+To publish a new version of the map:
+
+```
+MAP_KEY=<key from the sheet's Map links> python3 tools/targeting_map.py path/to/map.html
+```
+
+Without `MAP_KEY` the tool makes a new key; then update the two Map formulas in the sheet
+('By client'!F2 and 'By campaign'!F2). Never commit the key.
