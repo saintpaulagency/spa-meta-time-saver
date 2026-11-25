@@ -41,13 +41,16 @@ DASH_PASSWORD=... python3 tools/pack.py pack     # after editing the source
 
 `targeting-map/` is the Meta Targeting Map (every live campaign's location targeting drawn
 around the client's stores), so the team can open it without Claude. It opens from the
-**Open map** links in the Meta Location Targeting Tracker sheet and is locked with the team
-password, the same one as this dashboard (location targeting is sensitive). A device that
-unlocked the dashboard with "Remember this device" opens it straight away (same site).
+**Open map** links in the Meta Location Targeting Tracker sheet and is locked with the
+**SPA Dashboards** password (the "SPA dashboards" entry), the same lock as the SPA Dashboards hub
+at saintpaulagency.github.io. This dashboard keeps its own "Meta time saver" password. A device
+that unlocked one of the SPA Dashboards pages with "Remember this device" opens the map straight
+away (same site).
 
-The map is encrypted with a fresh data key, and that key is stored only wrapped with the team
-key, so nothing readable is in the repo and no tool ever needs the password. To publish a new
-version, get `MAP_DATA_KEY` and `MAP_WRAPPED_KEY` from an unlocked dashboard tab (snippet at
+The map is encrypted with a fresh data key, and that key is stored only wrapped with the SPA
+Dashboards key (salt in `src/dash_lock.json`), so nothing readable is in the repo and no tool ever
+needs the password. To publish a new version, get `MAP_DATA_KEY` and `MAP_WRAPPED_KEY` from a
+tab on a device that unlocked one of those pages (snippet at
 the top of `tools/targeting_map.py`), then:
 
 ```
