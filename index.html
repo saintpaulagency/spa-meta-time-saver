@@ -69,6 +69,33 @@ button:disabled{opacity:.6;cursor:wait}
     // Time Saved tracker retired (Nov 19 2026): its count lived in each browser and reset whenever keys were re-entered
     var hideSaved=document.createElement('style');hideSaved.textContent='#saved,#chip-saved{display:none!important}';(document.head||document.documentElement).appendChild(hideSaved);
     spaTextFixes();
+    spaFeedRules();
+  }
+  // Feed rules on top of the locked app (Nov 24 2026). Fold these into the app source at the next rebuild.
+  // Checked against the live dealer sites on Nov 24: Fury's used-car feed prices leave out the site's $1,000 discount and
+  // $350 doc fee, Olivia's leave out its fee, and the hand-kept sheets (Carlson, Chevy Winona, Park Jeep) run behind the
+  // sites. Those suggestions stay on the card as a note but aren't counted and aren't applied by "Approve all".
+  function spaFeedRules(){
+    try{
+      if(typeof checkCard!=='function'||window.__spaFeedRules)return;
+      window.__spaFeedRules=1;
+      var FEED_PRICE_OFF=/^(fury-|olivia-chrysler)/;
+      var orig=checkCard;
+      window.checkCard=function(card,feeds,opt){
+        var k=orig.apply(this,arguments);
+        try{
+          if(k&&k.status==='price'&&k.hit&&FEED_PRICE_OFF.test(k.hit.feed)&&!(INV.feeds[k.hit.feed]||{}).sheet){
+            k.quiet=k.quiet||'feedprice';k.label='Feed price differs from the website';
+            k.text=(k.text||'').replace(/\s*\(today’s feed\)\s*$/,'')+' in today’s feed. This dealer’s feed leaves out the website’s discounts and fees, so this isn’t counted. Open the vehicle page and only change the price if the site agrees.';
+          }
+          if(k&&k.status==='sold'&&feeds&&feeds.length&&feeds.every(function(f){return INV.feeds[f]&&INV.feeds[f].sheet})){
+            k.quiet=k.quiet||'sheet';k.label='Not on the manual sheet';
+            k.text='Not in '+feedLabel(feeds[0])+' manual sheet. The sheet is kept by hand and is often behind the dealer site, so this isn’t counted. Open the vehicle page and swap only if the car is gone.';
+          }
+        }catch(e){}
+        return k;
+      };
+    }catch(e){}
   }
   // Text fixes on top of the locked app (Nov 19 2026). Fold these into the app source at the next rebuild.
   function spaTextFixes(){
